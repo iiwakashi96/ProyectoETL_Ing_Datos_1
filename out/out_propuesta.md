@@ -50,8 +50,15 @@ Validado con `notebooks/validar_salida_ames.ipynb` (`NAMING_STYLE = "snake_case"
 comparación con fuentes activada) sobre esta misma versión del archivo: los siete criterios
 de la rúbrica (dimensiones, ausencia de nulos, nombres de columnas, transformaciones
 obligatorias, transformaciones opcionales, variables de calidad y extracción de MongoDB)
-quedaron en `APROBADO`. El detalle de las pruebas está en el notebook y en la sección de
-validación de `report.md`.
+quedaron en `APROBADO`.
+
+| Resultado | Cantidad |
+|---|---|
+| Criterios de la rúbrica aprobados | 7 de 7 |
+| Pruebas ejecutadas | 28 |
+| Errores / advertencias / no evaluadas | 0 / 0 / 0 |
+
+El detalle de las pruebas está en el notebook y en la sección de validación de `report.md`.
 
 Versiones anteriores del archivo (18 de noviembre) conservaban los nombres de columna con
 espacios del archivo de ejemplo y el código `NAmes`; se reemplazaron por esta versión tras
