@@ -6,9 +6,9 @@
 |---|---|
 | Curso | Ingeniería de Datos I, Unidad 4 (Procesos ETL). Maestría en Ciencia de Datos, Universidad Icesi, 2026-2 |
 | Proyecto | Proceso ETL en Azure Data Factory para integrar las fuentes del conjunto de datos Ames y producir `salida.csv` |
-| Equipo | `[Nombre o número del equipo]` |
-| Integrantes | Juan Pablo Jiménez, `[Nombre]`, `[Nombre]`, `[Nombre]` |
-| Fecha de entrega | `[dd de mes de 2026]` |
+| Equipo | Grupo 7 |
+| Integrantes | Mateo Sanchez, Luisa Mosquera, Dario Yepez, Juan Pablo Jimenez, Nathalia Herrera |
+| Fecha de entrega | 19 de noviembre de 2026 |
 | Repositorio | https://github.com/iiwakashi96/ProyectoETL_Ing_Datos_1 |
 
 ## 2. Introducción y objetivo
@@ -455,9 +455,152 @@ Disponible: https://github.com/angievig/ETLIngenieriaDatos1
 ## Anexos
 
 - **Anexo A.** Consulta de origen de PostgreSQL (en `pipelines/dataflow/df_ames.dsl`,
-  origen `postgres`).
-- **Anexo B.** Tabla de equivalencias de los 81 encabezados (nombre del enunciado →
-  snake_case).
-- **Anexo C.** Tablas de correspondencia descripción → código de `neighborhood`,
-  `condition` y `lot_shape`.
+  origen `postgres`).}
+  
+- **Anexo B. Equivalencia de los 81 encabezados**
+
+Nombres del enunciado y encabezados de `salida.csv` en snake_case, en el orden exigido.
+`PID`, `MS` y `QC` se conservan en mayúsculas.
+
+| # | Nombre en el enunciado | Encabezado en `salida.csv` |
+|---:|---|---|
+| 1 | `PID` | `PID` |
+| 2 | `MSSubClass` | `MS_sub_class` |
+| 3 | `MSZoning` | `MS_zoning` |
+| 4 | `LotFrontage` | `lot_frontage` |
+| 5 | `LotArea` | `lot_area` |
+| 6 | `Street` | `street` |
+| 7 | `Alley` | `alley` |
+| 8 | `LotShape` | `lot_shape` |
+| 9 | `LandContour` | `land_contour` |
+| 10 | `Utilities` | `utilities` |
+| 11 | `LotConfig` | `lot_config` |
+| 12 | `LandSlope` | `land_slope` |
+| 13 | `Neighborhood` | `neighborhood` |
+| 14 | `Condition1` | `condition_1` |
+| 15 | `Condition2` | `condition_2` |
+| 16 | `BldgType` | `bldg_type` |
+| 17 | `HouseStyle` | `house_style` |
+| 18 | `OverallQual` | `overall_qual` |
+| 19 | `OverallCond` | `overall_cond` |
+| 20 | `YearBuilt` | `year_built` |
+| 21 | `YearRemodAdd` | `year_remod_add` |
+| 22 | `RoofStyle` | `roof_style` |
+| 23 | `RoofMatl` | `roof_matl` |
+| 24 | `Exterior1st` | `exterior_1st` |
+| 25 | `Exterior2nd` | `exterior_2nd` |
+| 26 | `MasVnrType` | `mas_vnr_type` |
+| 27 | `MasVnrArea` | `mas_vnr_area` |
+| 28 | `ExterQual` | `exter_qual` |
+| 29 | `ExterCond` | `exter_cond` |
+| 30 | `Foundation` | `foundation` |
+| 31 | `BsmtQual` | `bsmt_qual` |
+| 32 | `BsmtCond` | `bsmt_cond` |
+| 33 | `BsmtExposure` | `bsmt_exposure` |
+| 34 | `BsmtFinType1` | `bsmt_fin_type_1` |
+| 35 | `BsmtFinSF1` | `bsmt_fin_sf_1` |
+| 36 | `BsmtFinType2` | `bsmt_fin_type_2` |
+| 37 | `BsmtFinSF2` | `bsmt_fin_sf_2` |
+| 38 | `BsmtUnfSF` | `bsmt_unf_sf` |
+| 39 | `TotalBsmtSF` | `total_bsmt_sf` |
+| 40 | `Heating` | `heating` |
+| 41 | `HeatingQC` | `heating_QC` |
+| 42 | `CentralAir` | `central_air` |
+| 43 | `Electrical` | `electrical` |
+| 44 | `1stFlrSF` | `1st_flr_sf` |
+| 45 | `2ndFlrSF` | `2nd_flr_sf` |
+| 46 | `LowQualFinSF` | `low_qual_fin_sf` |
+| 47 | `GrLivArea` | `gr_liv_area` |
+| 48 | `BsmtFullBath` | `bsmt_full_bath` |
+| 49 | `BsmtHalfBath` | `bsmt_half_bath` |
+| 50 | `FullBath` | `full_bath` |
+| 51 | `HalfBath` | `half_bath` |
+| 52 | `Bedroom` | `bedroom` |
+| 53 | `Kitchen` | `kitchen_abv_gr` |
+| 54 | `KitchenQual` | `kitchen_qual` |
+| 55 | `TotRmsAbvGrd` | `tot_rms_abv_grd` |
+| 56 | `Functional` | `functional` |
+| 57 | `Fireplaces` | `fireplaces` |
+| 58 | `FireplaceQu` | `fireplace_qu` |
+| 59 | `GarageType` | `garage_type` |
+| 60 | `GarageYrBlt` | `garage_yr_blt` |
+| 61 | `GarageFinish` | `garage_finish` |
+| 62 | `GarageCars` | `garage_cars` |
+| 63 | `GarageArea` | `garage_area` |
+| 64 | `GarageQual` | `garage_qual` |
+| 65 | `GarageCond` | `garage_cond` |
+| 66 | `PavedDrive` | `paved_drive` |
+| 67 | `WoodDeckSF` | `wood_deck_sf` |
+| 68 | `OpenPorchSF` | `open_porch_sf` |
+| 69 | `EnclosedPorch` | `enclosed_porch` |
+| 70 | `3SsnPorch` | `3ssn_porch` |
+| 71 | `ScreenPorch` | `screen_porch` |
+| 72 | `PoolArea` | `pool_area` |
+| 73 | `PoolQC` | `pool_QC` |
+| 74 | `Fence` | `fence` |
+| 75 | `MiscFeature` | `misc_feature` |
+| 76 | `MiscVal` | `misc_val` |
+| 77 | `MoSold` | `mo_sold` |
+| 78 | `YrSold` | `yr_sold` |
+| 79 | `SaleType` | `sale_type` |
+| 80 | `SaleCondition` | `sale_condition` |
+| 81 | `SalePrice` | `sale_price` |
+
+- **Anexo C. Tablas de correspondencia descripción → código**
+  
+Tablas del enunciado aplicadas en la caja `arreglar` del flujo `df_ames`.
+
+**`neighborhood`** (25 descripciones; `Greens`, `GrnHill` y `Landmrk` ya venían como
+código y se conservaron):
+
+| Descripción | Código |
+|---|---|
+| Bloomington Heights | Blmngtn |
+| Bluestem | Blueste |
+| Briardale | BrDale |
+| Brookside | BrkSide |
+| Clear Creek | ClearCr |
+| College Creek | CollgCr |
+| Crawford | Crawfor |
+| Edwards | Edwards |
+| Gilbert | Gilbert |
+| Iowa DOT and Rail Road | IDOTRR |
+| Meadow Village | MeadowV |
+| Mitchell | Mitchel |
+| North Ames | Names |
+| Northridge | NoRidge |
+| Northpark Villa | NPkVill |
+| Northridge Heights | NridgHt |
+| Northwest Ames | NWAmes |
+| Old Town | OldTown |
+| South & West of Iowa State University | SWISU |
+| Sawyer | Sawyer |
+| Sawyer West | SawyerW |
+| Somerset | Somerst |
+| Stone Brook | StoneBr |
+| Timberland | Timber |
+| Veenker | Veenker |
+
+**`condition_1` y `condition_2`** (los valores que ya eran código pasan sin cambio):
+
+| Descripción | Código |
+|---|---|
+| Adjacent to arterial street | Artery |
+| Adjacent to feeder street | Feedr |
+| Normal | Norm |
+| Within 200' of North-South Railroad | RRNn |
+| Adjacent to North-South Railroad | RRAn |
+| Near positive off-site feature--park greenbelt etc. | PosN |
+| Adjacent to positive off-site feature | PosA |
+| Within 200' of East-West Railroad | RRNe |
+| Adjacent to East-West Railroad | RRAe |
+
+**`lot_shape`**:
+
+| Descripción | Código |
+|---|---|
+| Regular | Reg |
+| Slightly irregular | IR1 |
+| Moderately Irregular | IR2 |
+| Irregular | IR3 |
 - **Anexo D.** Resultados completos del notebook de validación (`notebooks/`).
