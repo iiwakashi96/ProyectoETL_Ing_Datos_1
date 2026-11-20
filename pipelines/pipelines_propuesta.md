@@ -83,7 +83,7 @@ que ninguna unión multiplica filas: la salida de `unirMisc` sigue teniendo 2.93
 
 **`arreglar`** (Columna derivada, 29 fórmulas)
 
-- Rellena las columnas que vienen de Mongo cuando la casa no tiene documento: `NA` en las
+- Rellena las columnas que vienen de Mongo cuando la casa no tiene documento o le falta el campo: `NA` en las
   11 cualitativas (`Pool QC`, `Garage Type`, `Bsmt Qual`, `Misc Feature`...) y `0` en las
   11 numéricas (`Pool Area`, `Garage Cars`, `Total Bsmt SF`, `Misc Val`...), con `iifNull`.
 - `Year Remod/Add` vacío toma el valor de `Year Built`.

@@ -10,16 +10,17 @@ con una fila por propiedad y los 81 campos definidos en el enunciado.
 
 ## Información del equipo
 
-- **Nombre del equipo:** `[Completar: número o nombre del equipo]`
+- **Nombre del equipo:** Grupo 7
 - **Estado del proyecto:** En desarrollo. Pipeline construido y ejecutado; `salida.csv`
   validado el 19 de noviembre de 2026; reporte y presentación en elaboración.
 
 | Integrante | Usuario de GitHub |
 |---|---|
-| Juan Pablo Jiménez | [@iiwakashi96](https://github.com/iiwakashi96) |
-| `[Nombre completo]` | `@[usuario]` |
-| `[Nombre completo]` | `@[usuario]` |
-| `[Nombre completo]` | `@[usuario]` |
+| Mateo Sanchez | [@mateosanchez888](https://github.com/mateosanchez888) |
+| Luisa Mosquera | [@luisamosquera96](https://github.com/luisamosquera96) |
+| Dario Yepez | [@dfyepezv](https://github.com/dfyepezv) |
+| Juan Pablo Jimenez | [@iiwakashi96](https://github.com/iiwakashi96) |
+| Nathalia Herrera | [@nathaherrera](https://github.com/nathaherrera) |
 
 ## Objetivo
 
