@@ -175,6 +175,8 @@ de cobertura del notebook: cero `PID` faltantes y cero adicionales frente al CSV
 
 ![Figura 1. Flujo de datos df_ames](pics/flujo%20df_ames.png)
 
+***Figura 1.*** *Flujo de datos `df_ames`: 6 orígenes, 5 uniones, transformaciones y salida.*
+
 ## 5. Transformaciones
 
 ### 5.1 Área habitable
@@ -324,9 +326,15 @@ en Monitor. Última ejecución de `pl_ames_etl`: 19 de noviembre de 2026, estado
 
 ![Figura 2. Canalización pl_copia_mongo](pics/pl_copia_mongo.png)
 
+***Figura 2.*** *Canalización `pl_copia_mongo`: cuatro actividades de copia de las colecciones de MongoDB a `staging/`.*
+
 ![Figura 3. Canalización pl_ames_etl](pics/pl_ames_etl.png)
 
+***Figura 3.*** *Canalización `pl_ames_etl`: actividad que ejecuta el flujo de datos `df_ames`.*
+
 ![Figura 4. Monitor con la ejecución correcta](pics/Monitor%20con%20la%20ejecuci%C3%B3n%20correcta.png)
+
+***Figura 4.*** *Monitor de Data Factory con la ejecución correcta de la canalización.*
 
 **Problemas resueltos durante la implementación.**
 
@@ -369,6 +377,14 @@ fuentes activada), ejecutado sobre el archivo final.
 | Códigos de calidad (`typequality`) | notebook | 0 diferencias en 4 campos | APROBADO | — |
 | Mongo: cardinalidad y valores de 4 colecciones | notebook | 0 duplicados, 0 diferencias en 22 campos | APROBADO | — |
 | Tres casas del archivo de ejemplo | comparación propia | 81 valores iguales en las 3 | APROBADO | — |
+
+![Figura 5. Resumen del notebook de validación](pics/Salida%201%20-%20notebook%20validaci%C3%B3n.png)
+
+***Figura 5.*** *Resumen del notebook de validación: los siete criterios de la rúbrica en estado APROBADO.*
+
+![Figura 6. Detalle de las pruebas del notebook de validación](pics/Salida%202%20-%20notebook%20validaci%C3%B3n.png)
+
+***Figura 6.*** *Detalle de las 28 pruebas ejecutadas por el notebook de validación, todas en estado APROBADO.*
 
 **Errores encontrados y corregidos.** La primera versión del archivo (18 de noviembre)
 reproducía exactamente el archivo de ejemplo del enunciado, con nombres de columna con
