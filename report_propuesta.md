@@ -62,7 +62,7 @@ Problemas de calidad relevantes:
 - `Condition 1` y `Condition 2` mezclan códigos y descripciones en la misma columna
   (`Norm` y `Normal`, `Feedr` y `Adjacent to feeder street`).
 - Tres barrios (`Greens`, `GrnHill`, `Landmrk`, 11 casas) no aparecen en la tabla de códigos
-  del enunciado; ya vienen escritos como código.
+  del enunciado.
 - `Alley` trae el texto `NA` escrito en 2.732 filas: es un valor, no un vacío.
 
 ### 3.2 PostgreSQL en Neon (`amesDB`)
@@ -97,7 +97,7 @@ Hallazgos:
 - Tres códigos de `mszoning` traen paréntesis (`A (agr)`, `C (all)`, `I (all)`, 29 casas); se
   dejaron como están en el catálogo.
 
-Evidencia: consulta de catálogo de restricciones y conteos por tabla (anexo A); consulta de
+Evidencia: consulta de catálogo de restricciones y conteos por tabla; consulta de
 `floordetail` agrupada por `pid` mostrando casas con 1 y 2 filas.
 
 ### 3.3 MongoDB Atlas (`test`)
@@ -236,9 +236,10 @@ colecciones por `PID`, esperando `NA`/`0` cuando no hay documento o campo; 0 dif
 Se aplicó la conversión completa a códigos en las cuatro columnas, con expresiones `case`
 en `arreglar` y la tabla de correspondencias del enunciado:
 
-- `neighborhood`: 28 descripciones a código (`North Ames` → `Names`, `College Creek` →
-  `CollgCr`...). Los tres barrios que ya venían como código (`Greens`, `GrnHill`,
-  `Landmrk`) se dejaron igual.
+- `neighborhood`: 21 reglas `case` de descripción a código (`North Ames` → `Names`,
+  `College Creek` → `CollgCr`...). Cuatro barrios tienen la misma descripción y código
+  (`Edwards`, `Gilbert`, `Sawyer`, `Veenker`) y tres no figuran en la tabla del enunciado
+  (`Greens`, `GrnHill`, `Landmrk`); todos pasan sin cambio por la rama por defecto.
 - `condition_1` y `condition_2`: 9 descripciones a código; los valores que ya eran código
   pasan sin cambio.
 - `lot_shape`: `Regular` → `Reg`, `Slightly irregular` → `IR1`, `Moderately Irregular` →
@@ -274,6 +275,14 @@ códigos definidos".
 | 81 encabezados | — | snake_case sin espacios | renombrado en `ordenar` | — | encabezados, notebook |
 
 ## 6. Implementación en Azure Data Factory
+
+**Extracción por fuente.**
+
+| Fuente | Servicio vinculado | Conjunto de datos | Mecanismo de extracción | Destino intermedio | Filas leídas |
+|---|---|---|---|---|---:|
+| `AmesProperty.csv` | `BlobAmes` | `ds_csv_ames` | Origen `csv` del flujo `df_ames`, `PID` proyectado como `long` | — | 2.930 |
+| PostgreSQL (`amesDB`) | `NeonConn` | `ds_pg_ames` | Origen `postgres` de `df_ames` con consulta (catálogos, agregación de `floordetail`, cálculos) | — | 2.930 × 40 columnas |
+| MongoDB `pool`, `garage`, `bsmt`, `misc` | `MongoConn` | `ds_mongo_*` | Copiar datos en `pl_copia_mongo` (excluye `_id` y `Order`, renombra `_$numberLong`) | `ames/staging/*.csv` (`ds_stg_*`) | 13 / 2.773 / 2.851 / 106 |
 
 **Servicios vinculados** (sin parámetros sensibles en el repositorio): `BlobAmes` (Azure
 Blob Storage con espacio de nombres jerárquico, contenedor `ames`), `NeonConn`
@@ -418,14 +427,17 @@ salidas está en el repositorio.
 7. **Dependencias externas.** La cuota compartida de Neon detuvo el proyecto un día. Tener
    una salida esperada calculada localmente permitió preparar un plan de contingencia y
    seguir validando sin conexión.
+   
+Aprendizajes de coordinación: trabajar sobre un único repositorio con una sola fábrica como
+fuente de verdad, acordar quién edita los archivos binarios (notebook) y publicar con
+mensajes cortos después de cada pieza terminada.
+
+### Sugerencias de mejora 
+  
 8. **Para una siguiente versión** usaríamos un solo conector de PostgreSQL de la misma versión
    en todas las fábricas del equipo, guardaríamos las credenciales en Azure Key Vault para
    poder conectar la fábrica a Git sin riesgo, y automatizaríamos la validación como un paso
    más de la canalización.
-
-Aprendizajes de coordinación: trabajar sobre un único repositorio con una sola fábrica como
-fuente de verdad, acordar quién edita los archivos binarios (notebook) y publicar con
-mensajes cortos después de cada pieza terminada.
 
 ## 11. Referencias
 
@@ -455,7 +467,7 @@ Disponible: https://github.com/angievig/ETLIngenieriaDatos1
 ## Anexos
 
 - **Anexo A.** Consulta de origen de PostgreSQL (en `pipelines/dataflow/df_ames.dsl`,
-  origen `postgres`).}
+  origen `postgres`).
   
 - **Anexo B. Equivalencia de los 81 encabezados**
 
@@ -550,8 +562,8 @@ Nombres del enunciado y encabezados de `salida.csv` en snake_case, en el orden e
   
 Tablas del enunciado aplicadas en la caja `arreglar` del flujo `df_ames`.
 
-**`neighborhood`** (25 descripciones; `Greens`, `GrnHill` y `Landmrk` ya venían como
-código y se conservaron):
+**`neighborhood`** (25 correspondencias del enunciado; `Greens`, `GrnHill` y `Landmrk` no
+figuran en la tabla y se conservaron):
 
 | Descripción | Código |
 |---|---|
@@ -603,4 +615,5 @@ código y se conservaron):
 | Slightly irregular | IR1 |
 | Moderately Irregular | IR2 |
 | Irregular | IR3 |
+
 - **Anexo D.** Resultados completos del notebook de validación (`notebooks/`).
