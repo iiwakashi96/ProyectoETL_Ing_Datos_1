@@ -1,118 +1,83 @@
-# Proyecto Ames de Ingeniería de Datos I
+# Proyecto ETL Ames — Ingeniería de Datos I
 
-Este repositorio es el template del proyecto de la Unidad 4 de **Ingeniería de Datos I**. Cada equipo de cuatro estudiantes debe crear su propio repositorio a partir de este template y utilizarlo para organizar el pipeline, la salida, la validación y la documentación del proyecto.
+Repositorio del equipo para el proyecto de la Unidad 4 de **Ingeniería de Datos I**
+(Maestría en Ciencia de Datos, Universidad Icesi, periodo 2026-2).
 
-El proyecto consiste en construir en **Azure Data Factory** un proceso ETL que integra información de un archivo CSV, una base PostgreSQL en Neon y colecciones de MongoDB Atlas. El resultado requerido es `salida.csv`, con una fila por propiedad y los 81 campos establecidos en el enunciado.
-
-## Crear el repositorio del equipo
-
-1. Una sola persona del equipo debe abrir el [repositorio template](https://github.com/angievig/ETLIngenieriaDatos1).
-2. Debe seleccionar **Use this template** y luego **Create a new repository**.
-3. Debe elegir el nombre y la visibilidad indicados por la docente.
-4. Debe invitar como colaboradores a los otros tres integrantes.
-5. Cada integrante debe aceptar la invitación y clonar el repositorio con GitHub Desktop.
-
-La [guía para usar el repositorio en equipo](docs/GUIA_USO_REPOSITORIO_GITHUB.docx) explica este procedimiento paso a paso.
+El proyecto construye en **Azure Data Factory** un proceso ETL que integra tres fuentes
+sobre las 2.930 propiedades del conjunto de datos Ames: un archivo CSV, una base de datos
+PostgreSQL en Neon y cuatro colecciones de MongoDB Atlas. El resultado es `out/salida.csv`,
+con una fila por propiedad y los 81 campos definidos en el enunciado.
 
 ## Información del equipo
 
-Después de crear el repositorio, reemplacen esta sección con la información real del equipo.
-
-- **Nombre del equipo:** `[Completar]`
-- **Estado del proyecto:** `[En preparación | En desarrollo | Finalizado]`
+- **Nombre del equipo:** Grupo 7
+- **Estado del proyecto:** En desarrollo. Pipeline construido y ejecutado; `salida.csv`
+  validado el 19 de noviembre de 2026; reporte y presentación en elaboración.
 
 | Integrante | Usuario de GitHub |
 |---|---|
-| `[Nombre completo]` | `@[usuario]` |
-| `[Nombre completo]` | `@[usuario]` |
-| `[Nombre completo]` | `@[usuario]` |
-| `[Nombre completo]` | `@[usuario]` |
+| Mateo Sanchez | [@mateosanchez888](https://github.com/mateosanchez888) |
+| Luisa Mosquera | [@luisamosquera96](https://github.com/luisamosquera96) |
+| Dario Yepez | [@dfyepezv](https://github.com/dfyepezv) |
+| Juan Pablo Jimenez | [@iiwakashi96](https://github.com/iiwakashi96) |
+| Nathalia Herrera | [@nathaherrera](https://github.com/nathaherrera) |
 
 ## Objetivo
 
-Construir un pipeline ETL en Azure Data Factory que investigue e integre por `PID` las fuentes entregadas, aplique las transformaciones definidas en el enunciado y produzca una salida validable con una fila por propiedad.
-
-El equipo debe ampliar este objetivo en el reporte y relacionarlo con las decisiones de integración, las comprobaciones realizadas y los resultados observados.
+Construir un pipeline ETL en Azure Data Factory que extraiga las fuentes entregadas, las
+integre por `PID` conservando las 2.930 propiedades, aplique las transformaciones del
+enunciado (área habitable, agregación de habitaciones y baños por piso, mes y año de
+venta, año de remodelación, códigos de calidad y zonificación, marcadores `NA` y `0` para
+ausencias) y produzca `salida.csv` con los 81 campos en el orden requerido, con una
+convención de nombres sin espacios.
 
 ## Fuentes y tecnologías
 
 | Componente | Uso en el proyecto |
 |---|---|
-| `sources/AmesProperty.csv` | Fuente de datos en formato CSV |
-| PostgreSQL en Neon | Tablas relacionales del proyecto |
-| MongoDB Atlas | Colecciones `garage`, `pool`, `bsmt` y `misc` |
-| Azure Data Factory | Orquestación e implementación del ETL |
-| Jupyter y Python | Validación de `salida.csv` |
+| `sources/AmesProperty.csv` | 19 campos generales de cada propiedad (2.930 filas, separador `;`). Define el universo de `PID` |
+| PostgreSQL en Neon (`amesDB`) | 6 tablas: `amesdbtemp` (32 columnas), `saleproperty` (fecha y precio de venta), `floordetail` (habitaciones y baños por piso, 4.182 filas) y los catálogos `mszoning`, `mssubclass` y `typequality` |
+| MongoDB Atlas (`test`) | Colecciones `garage` (2.773 documentos), `bsmt` (2.851), `misc` (106) y `pool` (13) |
+| Azure Blob Storage (Data Lake) | Contenedor `ames`: CSV de entrada, copias de Mongo en `staging/` y la salida en `salida/` |
+| Azure Data Factory | Dos canalizaciones: `pl_copia_mongo` (copia las colecciones a CSV) y `pl_ames_etl` (flujo de datos `df_ames` que une y transforma) |
+| pgAdmin y MongoDB Compass | Exploración de las fuentes y pruebas de la consulta de origen |
+| Python 3 con pandas y Jupyter | Validación de `salida.csv` con el notebook del curso |
+| GitHub y GitHub Desktop | Control de versiones y entrega |
 
-No publiquen credenciales, tokens ni cadenas de conexión de estas plataformas.
+## Convención de la salida
 
-## Salida esperada
-
-El archivo final debe guardarse como `out/salida.csv` y cumplir las reglas del enunciado. Entre las comprobaciones principales se encuentran:
-
-- una fila por propiedad;
-- 81 campos en el orden solicitado;
-- unicidad y cobertura de `PID`;
-- uso consistente de camel case, snake case o kebab case, sin espacios;
-- conservación de `PID`, `MS` y `QC` en mayúsculas;
-- uso de `NA` y `0` como únicos marcadores permitidos para valores ausentes, según corresponda;
-- aplicación y validación de las transformaciones obligatorias.
-
-Las cifras observadas deben provenir de la ejecución del equipo. No deben copiarse conteos de referencia como si fueran resultados propios.
+- 81 columnas en el orden del enunciado, nombres en **snake_case** sin espacios, con las
+  siglas `PID`, `MS` y `QC` en mayúsculas (por ejemplo `MS_sub_class`, `heating_QC`,
+  `year_remod_add`).
+- Separador `;`, codificación UTF-8, primera fila como encabezado.
+- Valores ausentes: `NA` en campos cualitativos y `0` en campos numéricos.
+- Transformaciones opcionales aplicadas: `neighborhood`, `condition_1`, `condition_2` y
+  `lot_shape` en códigos.
 
 ## Estructura del repositorio
 
-| Ruta | Contenido esperado |
+| Ruta | Contenido |
 |---|---|
-| `sources/` | Fuentes originales, colecciones y scripts entregados |
-| `pipelines/` | Exportaciones y documentación del pipeline de ADF |
-| `notebooks/` | Notebook de validación y guía de uso |
-| `out/` | `salida.csv` y descripción de la salida final |
-| `docs/` | Guías para el reporte, la presentación y el uso del repositorio |
+| `sources/` | Fuentes originales entregadas por el curso (no se modifican) |
+| `pipelines/` | JSON exportados de Data Factory (canalizaciones, flujo de datos, conjuntos de datos y servicios vinculados sin credenciales), plantilla ARM, capturas y `pipelines.md` |
+| `notebooks/` | Notebook de validación `validar_salida_ames.ipynb` ejecutado sobre nuestra salida, y su guía |
+| `out/` | `salida.csv` final y `out.md` con su descripción |
+| `docs/` | Guías del curso para el reporte, la presentación y el uso del repositorio |
 | `report.md` | Reporte del proyecto |
-| `README.md` | Presentación general y acceso a los entregables |
-
-No sobrescriban, renombren ni eliminen las fuentes originales sin una justificación explícita.
+| `README.md` | Este archivo |
 
 ## Entregables
 
 - [Reporte del proyecto](report.md)
 - [Documentación del pipeline](pipelines/pipelines.md)
-- Archivo final `out/salida.csv`
-- [Descripción de la salida](out/out.md)
+- [Archivo final `salida.csv`](out/salida.csv) y [descripción de la salida](out/out.md)
 - [Notebook de validación](notebooks/validar_salida_ames.ipynb)
-- Evidencias utilizadas en el reporte y la presentación
-
-## Guías disponibles
-
-- [Uso del repositorio y trabajo en equipo](docs/GUIA_USO_REPOSITORIO_GITHUB.docx)
-- [Preparación del reporte](docs/GUIA_PREPARACION_REPORTE.md)
-- [Preparación de la presentación](docs/GUIA_PREPARACION_PRESENTACION.md)
-- [Uso del notebook de validación](notebooks/GUIA_USO_VALIDACION_SALIDA.md)
-
-## Trabajo en equipo
-
-Para reducir conflictos durante este primer proyecto:
-
-1. acuerden quién editará cada archivo;
-2. sincronicen el repositorio antes de comenzar;
-3. eviten que dos personas modifiquen simultáneamente el mismo archivo;
-4. revisen los cambios en GitHub Desktop antes de guardarlos;
-5. publiquen los cambios y avisen al equipo cuando terminen.
-
-Cada integrante debe trabajar desde su propia cuenta de GitHub. Los notebooks, documentos, imágenes y otros archivos binarios requieren especial coordinación porque no se combinan fácilmente.
 
 ## Seguridad
 
-Nunca incluyan en el repositorio:
-
-- contraseñas o tokens;
-- cadenas de conexión de Neon, MongoDB Atlas o Azure;
-- archivos `.env` con valores reales;
-- capturas de pantalla con información de acceso;
-- rutas personales innecesarias.
-
-Si una credencial se publica accidentalmente, debe cambiarse o revocarse de inmediato. Borrarla del archivo no garantiza que desaparezca del historial.
+Este repositorio no contiene contraseñas, tokens ni cadenas de conexión de Neon, MongoDB
+Atlas o Azure. Los servicios vinculados exportados en `pipelines/` tienen las credenciales
+eliminadas.
 
 ## Licencia
 
