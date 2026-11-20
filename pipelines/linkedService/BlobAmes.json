@@ -1,0 +1,11 @@
+{
+    "name": "BlobAmes",
+    "type": "Microsoft.DataFactory/factories/linkedservices",
+    "properties": {
+        "annotations": [],
+        "type": "AzureBlobStorage",
+        "typeProperties": {
+            "connectionString": "DefaultEndpointsProtocol=https;AccountName=proyecto1144088;EndpointSuffix=core.windows.net;"
+                }
+    }
+}

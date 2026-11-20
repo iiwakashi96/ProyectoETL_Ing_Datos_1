@@ -1,0 +1,12 @@
+{
+    "name": "NeonConn",
+    "type": "Microsoft.DataFactory/factories/linkedservices",
+    "properties": {
+        "annotations": [],
+        "type": "AzurePostgreSql",
+        "version": "1.0",
+        "typeProperties": {
+            "connectionString": "host=<servidor>;port=5432;database=amesDB;uid=<usuario>;encryptionmethod=1;validateservercertificate=0"
+        }
+    }
+}

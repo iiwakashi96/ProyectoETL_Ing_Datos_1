@@ -1,0 +1,25 @@
+{
+    "name": "ds_stg_misc",
+    "properties": {
+        "linkedServiceName": {
+            "referenceName": "BlobAmes",
+            "type": "LinkedServiceReference"
+        },
+        "annotations": [],
+        "type": "DelimitedText",
+        "typeProperties": {
+            "location": {
+                "type": "AzureBlobStorageLocation",
+                "fileName": "misc.csv",
+                "folderPath": "staging",
+                "container": "ames"
+            },
+            "columnDelimiter": ",",
+            "escapeChar": "\\",
+            "firstRowAsHeader": true,
+            "quoteChar": "\""
+        },
+        "schema": []
+    },
+    "type": "Microsoft.DataFactory/factories/datasets"
+}

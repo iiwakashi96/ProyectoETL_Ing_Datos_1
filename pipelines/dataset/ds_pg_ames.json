@@ -1,0 +1,13 @@
+{
+    "name": "ds_pg_ames",
+    "properties": {
+        "linkedServiceName": {
+            "referenceName": "NeonConn",
+            "type": "LinkedServiceReference"
+        },
+        "annotations": [],
+        "type": "AzurePostgreSqlTable",
+        "schema": []
+    },
+    "type": "Microsoft.DataFactory/factories/datasets"
+}

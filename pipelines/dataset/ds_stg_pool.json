@@ -1,0 +1,25 @@
+{
+    "name": "ds_stg_pool",
+    "properties": {
+        "linkedServiceName": {
+            "referenceName": "BlobAmes",
+            "type": "LinkedServiceReference"
+        },
+        "annotations": [],
+        "type": "DelimitedText",
+        "typeProperties": {
+            "location": {
+                "type": "AzureBlobStorageLocation",
+                "fileName": "pool.csv",
+                "folderPath": "staging",
+                "container": "ames"
+            },
+            "columnDelimiter": ",",
+            "escapeChar": "\\",
+            "firstRowAsHeader": true,
+            "quoteChar": "\""
+        },
+        "schema": []
+    },
+    "type": "Microsoft.DataFactory/factories/datasets"
+}

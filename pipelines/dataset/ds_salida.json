@@ -1,0 +1,24 @@
+{
+    "name": "ds_salida",
+    "properties": {
+        "linkedServiceName": {
+            "referenceName": "BlobAmes",
+            "type": "LinkedServiceReference"
+        },
+        "annotations": [],
+        "type": "DelimitedText",
+        "typeProperties": {
+            "location": {
+                "type": "AzureBlobStorageLocation",
+                "folderPath": "salida",
+                "container": "ames"
+            },
+            "columnDelimiter": ";",
+            "escapeChar": "\\",
+            "firstRowAsHeader": true,
+            "quoteChar": "\""
+        },
+        "schema": []
+    },
+    "type": "Microsoft.DataFactory/factories/datasets"
+}

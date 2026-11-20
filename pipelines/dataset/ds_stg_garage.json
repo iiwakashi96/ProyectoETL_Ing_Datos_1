@@ -1,0 +1,25 @@
+{
+    "name": "ds_stg_garage",
+    "properties": {
+        "linkedServiceName": {
+            "referenceName": "BlobAmes",
+            "type": "LinkedServiceReference"
+        },
+        "annotations": [],
+        "type": "DelimitedText",
+        "typeProperties": {
+            "location": {
+                "type": "AzureBlobStorageLocation",
+                "fileName": "garage.csv",
+                "folderPath": "staging",
+                "container": "ames"
+            },
+            "columnDelimiter": ",",
+            "escapeChar": "\\",
+            "firstRowAsHeader": true,
+            "quoteChar": "\""
+        },
+        "schema": []
+    },
+    "type": "Microsoft.DataFactory/factories/datasets"
+}

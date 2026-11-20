@@ -1,0 +1,43 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "factoryName": {
+            "type": "string",
+            "metadata": "Nombre de instancia de Data Factory",
+            "defaultValue": "Proyecto-Ing-Datos-JPJH"
+        },
+        "dataFactory_location": {
+            "type": "string",
+            "defaultValue": "northcentralus"
+        },
+        "dataFactory_identity_type": {
+            "type": "string",
+            "defaultValue": "SystemAssigned"
+        }
+    },
+    "variables": {
+        "factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+    },
+    "resources": [
+        {
+            "name": "[parameters('factoryName')]",
+            "type": "Microsoft.DataFactory/factories",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "trustModeClaimForMi": {
+                    "value": "Disabled",
+                    "editable": true,
+                    "isExplicitlySet": false
+                }
+            },
+            "dependsOn": [],
+            "location": "[parameters('dataFactory_location')]",
+            "identity": {
+                "type": "[parameters('dataFactory_identity_type')]",
+                "principalId": "75e39273-37a6-4e69-b2f9-e79e36d3cf35",
+                "tenantId": "e994072b-523e-4bfe-86e2-442c5e10b244"
+            }
+        }
+    ]
+}
