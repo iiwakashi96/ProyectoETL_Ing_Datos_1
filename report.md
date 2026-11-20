@@ -96,9 +96,16 @@ Hallazgos:
 - `Sale Type` trae el valor `WD ` con un espacio final en 2.536 filas.
 - Tres códigos de `mszoning` traen paréntesis (`A (agr)`, `C (all)`, `I (all)`, 29 casas); se
   dejaron como están en el catálogo.
+- La ausencia de dato se representa de tres formas distintas: `NULL` (las 47 celdas
+  anteriores), el texto `NA` (`fence`: 2.358; `Fireplace Qu`: 1.422) y el texto `None`
+  (`Mas Vnr Type`: 1.752). Una consulta con `IS NULL` subestima los faltantes:
+  `Fireplace Qu` no tiene nulos, aunque el 48,5 % de las casas no tiene chimenea. Los
+  textos `NA` y `None` son valores válidos de la fuente y se conservaron en la salida.
+- El usuario compartido de la base tiene permisos de lectura y escritura (`SELECT` e
+  `INSERT`). La exploración y la extracción usaron solo consultas `SELECT`; para un ETL
+  en producción se recomienda un usuario de solo lectura.
 
-Evidencia: consulta de catálogo de restricciones y conteos por tabla; consulta de
-`floordetail` agrupada por `pid` mostrando casas con 1 y 2 filas.
+Evidencia: Anexo E, figuras E.1 a E.6.
 
 ### 3.3 MongoDB Atlas (`test`)
 
@@ -120,6 +127,16 @@ Hallazgos:
 - Los números vienen envueltos en el tipo extendido de Mongo (`{"$numberLong": "..."}`), que
   ADF expone como columnas con sufijo `_$numberLong`.
 - `garage` trae un campo `Order` que no forma parte de la salida.
+- Hay documentos existentes con datos incompletos o contradictorios. En `bsmt`, la casa
+  903230120 tiene documento pero ningún dato de sótano, solo `_id` y `PID`; en la salida
+  queda con `NA` y `0`, igual que una casa sin sótano, aunque no es posible saber si lo
+  tiene. En `garage`, la casa 903426160 registra 1 carro y 360 pies², pero `Garage Qual`
+  y `Garage Cond` traen el texto `NA`; la salida conserva esos valores tal como vienen
+  de la fuente.
+- En `misc`, 3 documentos registran una característica con `Misc Val = 0`. Es un caso
+  ambiguo: no se puede saber si el valor es realmente cero o si no se registró.
+
+Evidencia: Anexo E, figuras E.7 y E.8.
 
 ### 3.4 Síntesis de la exploración
 
@@ -637,3 +654,118 @@ figuran en la tabla y se conservaron):
 | Irregular | IR3 |
 
 - **Anexo D.** Resultados completos del notebook de validación (`notebooks/`).
+
+- **Anexo E. Evidencia de la exploración de las fuentes**
+
+Consultas ejecutadas en pgAdmin (PostgreSQL) y en el shell de MongoDB Compass durante la
+exploración, con su resultado. Las cifras son conteos observados en las fuentes.
+
+**E.1 Tablas disponibles en PostgreSQL**
+
+```sql
+SELECT table_schema, table_name
+FROM information_schema.tables
+WHERE table_schema NOT IN ('pg_catalog','information_schema')
+  AND table_type = 'BASE TABLE'
+ORDER BY table_schema, table_name;
+```
+
+![Figura E.1. Tablas de amesDB](pics/exploracion/pg_tablas.png)
+
+***Figura E.1.*** *Las 6 tablas del esquema `public` de `amesDB`.*
+
+**E.2 Filas por tabla**
+
+```sql
+SELECT 'amesdbtemp' AS tabla, COUNT(*) AS filas FROM amesdbtemp
+UNION ALL SELECT 'saleproperty', COUNT(*) FROM saleproperty
+UNION ALL SELECT 'floordetail',  COUNT(*) FROM floordetail
+UNION ALL SELECT 'mssubclass',   COUNT(*) FROM mssubclass
+UNION ALL SELECT 'mszoning',     COUNT(*) FROM mszoning
+UNION ALL SELECT 'typequality',  COUNT(*) FROM typequality;
+```
+
+![Figura E.2. Filas por tabla](pics/exploracion/pg_conteos.png)
+
+***Figura E.2.*** *Conteos observados: coinciden con las cifras de referencia del enunciado.*
+
+**E.3 Llaves declaradas**
+
+```sql
+SELECT tc.table_name, tc.constraint_type, kcu.column_name,
+       ccu.table_name AS tabla_referenciada, ccu.column_name AS columna_referenciada
+FROM information_schema.table_constraints tc
+JOIN information_schema.key_column_usage kcu
+     ON tc.constraint_name = kcu.constraint_name AND tc.table_schema = kcu.table_schema
+LEFT JOIN information_schema.constraint_column_usage ccu
+     ON tc.constraint_name = ccu.constraint_name AND tc.constraint_type = 'FOREIGN KEY'
+WHERE tc.table_schema = 'public'
+  AND tc.constraint_type IN ('PRIMARY KEY','FOREIGN KEY','UNIQUE')
+ORDER BY tc.table_name, tc.constraint_type;
+```
+
+![Figura E.3. Llaves declaradas](pics/exploracion/pg_llaves.png)
+
+***Figura E.3.*** *Solo existen dos llaves foráneas (`saleproperty` y `floordetail` hacia `amesdbtemp`); las relaciones con los catálogos no están declaradas.*
+
+**E.4 Cardinalidad de `floordetail`**
+
+```sql
+SELECT "Floor", COUNT(*) AS filas
+FROM floordetail
+GROUP BY "Floor"
+ORDER BY "Floor";
+```
+
+![Figura E.4. Filas de floordetail por piso](pics/exploracion/pg_floordetail_pisos.png)
+
+***Figura E.4.*** *2.930 propiedades tienen piso 1 y 1.252 tienen piso 2: relación 1 a N con `amesdbtemp`, que obliga a agregar por `PID` antes de unir.*
+
+**E.5 Nulos en `amesdbtemp`**
+
+```sql
+SELECT COUNT(*) - COUNT("Mas Vnr Type") AS masvnrtype_nulos,
+       COUNT(*) - COUNT("Mas Vnr Area") AS masvnrarea_nulos,
+       COUNT(*) - COUNT(electrical)     AS electrical_nulos
+FROM amesdbtemp;
+```
+
+![Figura E.5. Nulos en amesdbtemp](pics/exploracion/pg_nulos.png)
+
+***Figura E.5.*** *23 nulos en `Mas Vnr Type`, 23 en `Mas Vnr Area` y 1 en `electrical`.*
+
+**E.6 Espacio sobrante en `Sale Type`**
+
+```sql
+SELECT COUNT(*) AS wd_con_espacio
+FROM saleproperty
+WHERE "Sale Type" = 'WD ';
+```
+
+![Figura E.6. Valores WD con espacio](pics/exploracion/pg_wd_espacio.png)
+
+***Figura E.6.*** *2.536 registros con el valor `WD ` seguido de un espacio.*
+
+**E.7 Documentos por colección de MongoDB**
+
+```javascript
+db.garage.countDocuments({})
+db.pool.countDocuments({})
+db.bsmt.countDocuments({})
+db.misc.countDocuments({})
+```
+
+![Figura E.7. Documentos por colección](pics/exploracion/mongo_conteos.png)
+
+***Figura E.7.*** *Conteos observados en la base `test`: 2.773, 13, 2.851 y 106 documentos.*
+
+**E.8 Frecuencia de campos en `garage`**
+
+```javascript
+db.garage.countDocuments({ "Garage Yr Blt": { $exists: true } })
+// misma consulta para cada campo de la colección
+```
+
+![Figura E.8. Documentos de garage que contienen cada campo](pics/exploracion/mongo_garage_campos.png)
+
+***Figura E.8.*** *Número de documentos de `garage` que contienen cada campo: algunos campos faltan dentro de documentos existentes.*
