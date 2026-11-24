@@ -5,7 +5,7 @@
 | Campo | Valor |
 |---|---|
 | Curso | Ingeniería de Datos I, Unidad 4 (Procesos ETL). Maestría en Ciencia de Datos, Universidad Icesi, 2026-2 |
-| Proyecto | Proceso ETL en Azure Data Factory para integrar las fuentes del conjunto de datos Ames y producir `salida.csv` |
+| Proyecto | Diseño e implementación de un proceso ETL en Azure Data Factory para la integración de fuentes heterogéneas del conjunto de datos Ames. `salida.csv` |
 | Equipo | Grupo 7 |
 | Integrantes | Mateo Sánchez, Luisa Mosquera, Darío Yépez, Juan Pablo Jiménez, Nathalia Herrera |
 | Fecha de entrega | 19 de noviembre de 2026 |
@@ -28,18 +28,13 @@
 
 ## 2. Introducción y objetivo
 
-El conjunto de datos Ames describe 2.930 propiedades residenciales vendidas en Ames, Iowa,
-con 81 variables sobre el lote, la construcción, el sótano, el garaje y la venta [1]. Para
-el proyecto, el curso repartió esa información en tres fuentes de naturaleza distinta: un
-archivo CSV con los datos del lote y la ubicación, una base de datos relacional PostgreSQL
-alojada en Neon con la construcción, los pisos y la venta, y cuatro colecciones de MongoDB
-Atlas con lo que no todas las casas tienen (garaje, sótano, piscina y extras). Ninguna
-fuente por sí sola describe una propiedad completa, y cada una tiene su propia forma de
-representar ausencias, códigos y tipos.
+El conjunto de datos Ames describe 2.930 propiedades residenciales vendidas en Ames, Iowa, mediante 81 variables relacionadas con las características del lote, la construcción, las instalaciones y las condiciones de venta [1]. Para el desarrollo del proyecto, la información fue distribuida en diferentes fuentes y tecnologías: un archivo CSV con información del lote y la ubicación, una base de datos relacional PostgreSQL alojada en Neon con la construcción, los pisos y la venta, y cuatro colecciones de MongoDB Atlas correspondientes a garajes, sótanos, piscinas y características adicionales, que no todas las casas tienen. Ninguna fuente por sí sola describe una propiedad completa, y cada una tiene su propia forma de representar ausencias, códigos y tipos. 
+
+Esta distribución representó un reto de integración, debido a las diferencias en las estructuras, los tipos de datos, las llaves de identificación y la forma de representar los valores ausentes. Por esta razón, fue necesario diseñar un proceso ETL que permitiera consolidar la información, aplicar las reglas de transformación establecidas y garantizar la integridad del conjunto de datos resultante.
 
 El objetivo del proyecto fue construir en Azure Data Factory (ADF) un proceso ETL que:
 
-1. extraiga las tres fuentes tal como fueron entregadas, sin modificarlas;
+1. extraiga la información de las tres fuentes originales, conservando la integridad de los datos de origen;
 2. las integre por la llave `PID` conservando exactamente una fila por cada una de las 2.930
    propiedades, sin perder ni duplicar ninguna;
 3. aplique las transformaciones obligatorias del enunciado (área habitable, agregación de
@@ -49,8 +44,7 @@ El objetivo del proyecto fue construir en Azure Data Factory (ADF) un proceso ET
 5. produzca `salida.csv` con los 81 campos en el orden definido, con una convención de
    nombres sin espacios, y lo valide contra las fuentes.
 
-El resultado es verificable: el archivo entregado en `out/salida.csv` pasó las 28 pruebas
-del notebook de validación del curso (sección 7).
+Como resultado, se obtuvo el archivo entregado en `out/salida.csv`, compuesto por 2.930 registros y 81 columnas, que integra la información de las diferentes fuentes en una estructura unificada. Su consistencia fue comprobada mediante el notebook de validación proporcionado en el curso, en el cual se ejecutaron 28 pruebas, todas con resultado APROBADO, cuyos resultados se presentan en la sección 7.
 
 ## 3. Fuentes de datos y exploración
 
@@ -80,6 +74,8 @@ Problemas de calidad relevantes:
   del enunciado.
 - `Alley` trae el texto `NA` escrito en 2.732 filas: es un valor, no un vacío.
 
+La revisión de estas inconsistencias permitió identificar que la integración no podía limitarse a combinar las fuentes, sino que requería aplicar reglas específicas de normalización y tratamiento de valores ausentes, manteniendo la trazabilidad respecto a los datos originales.
+
 ### 3.2 PostgreSQL en Neon (`amesDB`)
 
 El modelo relacional está en `sources/scriptAmesDB.sql` (DDL de 6 tablas) y en
@@ -98,6 +94,8 @@ nulos en las seis columnas. Se trataron como búsquedas implícitas.
 | `mszoning` | Catálogo de zonificación: id → código | `id` | catálogo | 8 | 8 | código de `MS Zoning` |
 | `typequality` | Catálogo de calidades: 1 Ex, 2 Gd, 3 TA, 4 Fa, 5 Po | `id` | catálogo | 5 | 5 | códigos de `Exter Qual`, `Exter Cond`, `Heating QC`, `Kitchen Qual` |
 | `mssubclass` | Catálogo de tipos de vivienda | `code` | catálogo | 16 | 16 | ninguna (la salida conserva el número) |
+
+La exploración de PostgreSQL permitió establecer que las tablas `amesdbtemp` y `saleproperty` presentan una relación uno a uno con `PID`, mientras que `floordetail` presenta una relación de uno a muchos, debido a que registra información desagregada por piso. Esta diferencia fue determinante para definir la estrategia de integración, ya que fue necesario agregar previamente los registros de `floordetail` para evitar la multiplicación de propiedades durante las uniones.
 
 Hallazgos:
 
@@ -171,17 +169,17 @@ unir con los catálogos; (c) la cobertura parcial de las colecciones de Mongo (d
 unir; (d) el `PID` llega como texto desde el CSV y como número desde las demás fuentes, lo
 que exigió fijar el tipo antes de unir.
 
+En conjunto, la exploración permitió establecer las condiciones necesarias para diseñar el proceso de integración. Se identificaron diferencias en los tipos de datos de las llaves, relaciones de uno a muchos, cobertura parcial de las colecciones documentales y distintas representaciones de valores ausentes. Estos hallazgos orientaron la selección de las uniones externas izquierdas, la agregación previa de los registros de `floordetail`, la normalización de los tipos de `PID` y la aplicación de reglas específicas para completar los datos faltantes.
+
 ## 4. Diseño de la integración
 
-**Universo de propiedades.** Lo define `AmesProperty.csv`: tiene las 2.930 casas, una por
-fila, sin repetidos. Todas las demás fuentes se pegan a él; ninguna puede agregar ni quitar
-filas.
+**Universo de propiedades.** Lo define `AmesProperty.csv`: contiene las 2.930 propiedades, una por fila y sin `PID` repetidos. Por esta razón, se utilizó como fuente izquierda o conjunto base de la integración. Todas las demás fuentes se incorporaron tomando `PID` como llave de correspondencia, con el propósito de completar la información de cada propiedad sin agregar ni eliminar registros del conjunto original.
 
 **Dónde se hace cada cosa.** Se repartió el trabajo entre la base relacional y el flujo de
 datos de ADF según dónde fuera más natural y verificable:
 
 - En PostgreSQL, mediante una consulta de origen (`pipelines/dataflow/df_ames.dsl`, origen
-  `postgres`): los cuatro `JOIN` con catálogos, la agregación de `floordetail`, el cálculo
+  `postgres`): los cinco `JOIN` con catálogos, la agregación de `floordetail`, el cálculo
   de `Gr Liv Area`, la extracción de mes y año, `Central Air` a `Y`/`N` y el `COALESCE` de
   los nulos. La consulta devuelve exactamente 2.930 filas con `PID` y 40 columnas, y se probó
   en pgAdmin antes de usarla en ADF.
@@ -199,11 +197,9 @@ datos de ADF según dónde fuera más natural y verificable:
 | `unirBsmt` | resultado anterior | `staging/bsmt.csv` (2.851) | igual | externa izquierda | 2.930 → 2.930 | 0..1; 79 casas sin sótano |
 | `unirMisc` | resultado anterior | `staging/misc.csv` (106) | igual | externa izquierda | 2.930 → 2.930 | 0..1; 2.824 casas sin extras |
 
-**Comprobaciones.** Que ninguna unión multiplicara filas se comprobó de dos formas: en la
-exploración, verificando que cada fuente tuviera como máximo una fila por `PID` (agregada en
-el caso de `floordetail`); y en la ejecución, confirmando que la salida de `unirMisc` y el
-receptor reportan 2.930 filas. Que ninguna eliminara propiedades se comprobó con la prueba
-de cobertura del notebook: cero `PID` faltantes y cero adicionales frente al CSV.
+**Comprobaciones de integridad.** Para verificar que las uniones no multiplicaran registros, durante la exploración se revisó la cardinalidad de las fuentes respecto a `PID` y se agregó previamente `floordetail`, garantizando una sola fila por propiedad antes de integrarla. Posteriormente, durante la ejecución de ADF, se confirmó que el resultado de `unirMisc` y el receptor reportaran 2.930 filas.
+
+Para comprobar que no se eliminaran propiedades, se ejecutó una prueba de cobertura en el notebook de validación, comparando los `PID` de `salida.csv` con los del archivo base `AmesProperty.csv`. El resultado fue de cero identificadores faltantes y cero adicionales, confirmando que se conservaron las 2.930 propiedades originales.
 
 ![Figura 1. Flujo de datos df_ames](pics/flujo%20df_ames.png)
 
@@ -213,34 +209,50 @@ de cobertura del notebook: cero `PID` faltantes y cero adicionales frente al CSV
 
 ### 5.1 Área habitable
 
-`Gr Liv Area` no existe en ninguna fuente. Se calcula en la consulta de origen como
-`a."1st Flr SF" + a."2nd Flr SF" + a."Low Qual Fin SF"`. Las tres columnas son enteros
-sin nulos en `amesdbtemp`, por lo que no hubo que tratar ausencias. Validación: el notebook
-recalcula la suma fila por fila y la compara con la columna; 0 filas con diferencia.
+La variable `Gr Liv Area` no se encuentra directamente en las fuentes y se construyó mediante la suma de las áreas correspondientes al primer piso, segundo piso y área terminada de baja calidad.
+
+El cálculo se realizó en la consulta de origen de PostgreSQL mediante la expresión:
+
+`a."1st Flr SF" + a."2nd Flr SF" + a."Low Qual Fin SF"`. 
+
+Las tres columnas son de tipo entero y no presentan valores nulos en `amesdbtemp`, por lo que no fue necesario aplicar un tratamiento adicional de valores ausentes.
+
+**Validación:** el notebook recalculó la suma para cada propiedad y comparó el resultado con el valor generado en Gr Liv Area. Se obtuvieron cero filas con diferencias.
 
 ### 5.2 Habitaciones y baños
 
-`floordetail` tiene una fila por piso con `bedrooms`, `"Full Bath"` y `"Half Bath"`. En la
-consulta de origen se agrega con `SUM(...) GROUP BY pid` en una subconsulta, **antes** de
-unirla a `amesdbtemp`, de modo que entra con una fila por casa (2.930) y no con 4.182. Las
-casas sin fila en `floordetail` recibirían `0` por `COALESCE`, aunque no se presentó el
-caso. Validación: el notebook suma la fuente por `PID` y compara con `bedroom`,
-`full_bath` y `half_bath`; 0 diferencias en los tres campos.
+La tabla `floordetail` contiene información desagregada por piso para cada propiedad, con los campos `bedrooms`, `"Full Bath"` y `"Half Bath"`. Debido a esta estructura, fue necesario realizar una agregación por `PID` antes de integrar la información con la tabla principal `amesdbtemp`.
+
+La agregación se implementó en la consulta de origen de PostgreSQL mediante la función `SUM()` y la cláusula `GROUP BY pid`, sumando los dormitorios, baños completos y baños medios registrados en los diferentes pisos de cada propiedad.
+
+Esta operación permitió transformar los 4.182 registros originales de `floordetail` en una estructura de una fila por propiedad, con 2.930 registros, evitando la multiplicación de filas durante la integración.
+
+Para los casos sin registro en `floordetail`, se contempló el uso de `COALESCE` para asignar el valor 0; sin embargo, durante la exploración no se identificaron propiedades sin registros en esta tabla.
+
+**Validación:** el notebook realizó nuevamente la suma de los registros originales de `floordetail` por `PID` y comparó los resultados con las columnas `bedroom`, `full_bath` y `half_bath` generadas en la integración. Se obtuvieron cero diferencias en los tres campos.
 
 ### 5.3 Fecha de venta
 
-`saleproperty."Sale Date"` es de tipo fecha. En la consulta se extraen
-`CAST(EXTRACT(MONTH FROM s."Sale Date") AS integer)` y lo mismo con `YEAR`; la fecha
-completa no viaja a la salida. Validación: el notebook lee las fechas del dump de
-`saleproperty` y compara mes y año por `PID`; 0 diferencias.
+La tabla `saleproperty` contiene el campo `Sale Date`, cuyo tipo de dato original es fecha. A partir de este campo se generaron las variables `Mo Sold` y `Yr Sold`, correspondientes al mes y al año de la venta, respectivamente. 
+
+El cálculo se realizó en la consulta de origen de PostgreSQL mediante la función `EXTRACT`, convirtiendo los resultados a tipo entero:
+
+- Mes: `CAST(EXTRACT(MONTH FROM s."Sale Date") AS integer)`.
+- Año: `CAST(EXTRACT(YEAR FROM s."Sale Date") AS integer)`.
+
+La fecha completa no se incorporó a la salida, ya que se requerían únicamente las variables de mes y año.
+
+**Validación:** el notebook tomó las fechas originales de `saleproperty`, calculó nuevamente el mes y el año y comparó los resultados por `PID` con las columnas generadas durante la integración. Se obtuvieron cero diferencias.
 
 ### 5.4 Fecha de remodelación
 
-`Year Remod/Add` llega vacío desde el CSV en 1.569 casas. En la caja `arreglar` se aplica
-`iifNull({Year Remod/Add}, {Year Built})`. La evidencia distingue dato original de dato
-sustituido: el notebook reconstruye el valor esperado desde el CSV (el original si existía,
-`Year Built` si estaba vacío) y lo compara por `PID`; 0 diferencias, y ninguna fila quedó en
-`0` ni vacía.
+Durante la exploración del archivo `AmesProperty.csv` se identificaron 1.569 propiedades sin información en el campo `Year Remod/Add`. Para atender esta situación, se aplicó una regla de sustitución que conserva el año de remodelación original cuando está disponible y utiliza `Year Built` únicamente cuando el primer campo está vacío.
+
+La transformación se implementó en la caja `arreglar` del flujo de datos `df_ames`, mediante la expresión `iifNull({Year Remod/Add}, {Year Built})`.
+
+De esta manera, los valores existentes de `Year Remod/Add` se conservaron sin modificaciones, mientras que los registros ausentes se completaron con el año de construcción de la propiedad.
+
+**Validación:** el notebook reconstruyó el valor esperado para cada propiedad a partir del archivo CSV original: conservó `Year Remod/Add` cuando tenía información y utilizó `Year Built` cuando estaba vacío. Posteriormente, comparó el resultado esperado con la columna generada en la integración, utilizando `PID` como identificador. Se obtuvieron 0 diferencias y ninguna propiedad quedó con valores vacíos o en 0.
 
 ### 5.5 Variables de calidad y catálogos
 
@@ -249,48 +261,57 @@ sustituido: el notebook reconstruye el valor esperado desde el CSV (el original 
 | `MS_zoning` | `"MS Zoning"` (id) | `mszoning.id → code` | `LEFT JOIN` | 1:1 | 0 |
 | `exter_qual`, `exter_cond`, `heating_QC`, `kitchen_qual` | ids | `typequality.id → code` | 4 `LEFT JOIN` con alias | 1:1 | 0 |
 
-Se usó `LEFT JOIN` por seguridad, aunque la exploración mostró cero huérfanos; de haber un
-id sin correspondencia habría salido nulo y la validación lo habría detectado. Validación:
-el notebook rehace la búsqueda contra el dump de `typequality` y compara por `PID`; 0
-diferencias en las cuatro columnas.
+Se utilizaron uniones `LEFT JOIN` para conservar todos los registros de `amesdbtemp`, incluso si algún identificador no encontraba correspondencia en los catálogos. La relación esperada para cada unión era de uno a uno, dado que cada identificador debía corresponder a un único código de referencia.
+
+Durante la exploración se comprobó que las relaciones con los catálogos no presentaban registros huérfanos ni valores nulos en las columnas utilizadas para las correspondencias. Por esta razón, no fue necesario aplicar un tratamiento adicional para códigos sin correspondencia.
+
+**Validación:** el notebook realizó nuevamente la búsqueda de correspondencias contra el catálogo `typequality` y comparó los resultados por `PID` con las cuatro columnas de calidad generadas (`exter_qual`, `exter_cond`, `heating_QC` y `kitchen_qual`). Se obtuvieron 0 diferencias.
 
 ### 5.6 Datos ausentes de MongoDB
 
-Tras las uniones externas, las 22 columnas de Mongo quedan nulas en las casas sin documento
-o sin campo. En `arreglar`, 22 expresiones `iifNull` ponen `'NA'` en las 11 cualitativas y
-`0` en las 11 numéricas. Las tres situaciones se resuelven igual: documento ausente (por
-ejemplo 2.917 casas sin `pool`), campo ausente dentro del documento (3 casas con sótano sin
-`Bsmt Exposure`) y valor nulo. Un cero que ya era válido en la fuente (por ejemplo
-`BsmtFin SF 2 = 0` en sótanos sin segundo acabado) no se toca, porque `iifNull` solo actúa
-sobre nulos. Validación: el notebook compara las 22 columnas contra los JSON de las
-colecciones por `PID`, esperando `NA`/`0` cuando no hay documento o campo; 0 diferencias.
+Las cuatro colecciones de MongoDB (`garage`, `bsmt`, `pool` y `misc`) presentan propiedades sin documentos asociados y, en algunos casos, documentos existentes con campos ausentes. Para integrar esta información se utilizaron uniones externas izquierdas (`LEFT JOIN`), de manera que se conservaran las 2.930 propiedades del archivo base, incluso cuando no existía información en alguna colección.
+
+Después de realizar las uniones, las 22 columnas provenientes de MongoDB podían presentar valores nulos debido a la ausencia de documentos, campos o valores en las fuentes. Para estandarizar estos casos, en la caja `arreglar` del flujo `df_ames` se aplicaron 22 expresiones `iifNull`: se asignó `'NA'` a las 11 variables cualitativas y `0` a las 11 variables numéricas.
+
+Durante la exploración se identificaron diferentes situaciones que justificaron este tratamiento:
+
+- **Documento ausente:** ocurre cuando una propiedad no tiene registro en una colección. Por ejemplo, 2.917 propiedades no tienen documento en `pool`.
+- **Campo ausente dentro de un documento existente:** se identificaron 3 propiedades con documentos de sótano que no contienen el campo `Bsmt Exposure`.
+- **Valor cero válido:** algunos campos numéricos ya contienen el valor `0` en la fuente, como `BsmtFin SF 2` cuando no existe una segunda área de sótano terminada. Estos valores se conservaron porque la función `iifNull` solamente reemplaza valores nulos.
+
+Es importante señalar que la transformación asigna los mismos marcadores (`NA` y `0`) tanto a los documentos ausentes como a los campos ausentes. Por lo tanto, la salida estandariza estas situaciones, aunque no conserva una distinción explícita entre sus causas originales.
+
+**Validación:** el notebook comparó las 22 columnas provenientes de MongoDB con los documentos originales de las cuatro colecciones, utilizando `PID` como identificador. Se verificaron los valores existentes y los marcadores asignados a los datos ausentes, obteniendo 0 diferencias.
 
 ### 5.7 Transformaciones opcionales
 
-Se aplicó la conversión completa a códigos en las cuatro columnas, con expresiones `case`
-en `arreglar` y la tabla de correspondencias del enunciado:
+Se aplicaron transformaciones de descripción a código en las cuatro variables `neighborhood`, `condition_1`, `condition_2` y `lot_shape`, utilizando las tablas de correspondencias proporcionadas en el enunciado. Estas operaciones se implementaron mediante expresiones `case` en la caja `arreglar` del flujo de datos `df_ames`.
 
-- `neighborhood`: 21 reglas `case` de descripción a código (`North Ames` → `Names`,
-  `College Creek` → `CollgCr`...). Cuatro barrios tienen la misma descripción y código
-  (`Edwards`, `Gilbert`, `Sawyer`, `Veenker`) y tres no figuran en la tabla del enunciado
-  (`Greens`, `GrnHill`, `Landmrk`); todos pasan sin cambio por la rama por defecto.
-- `condition_1` y `condition_2`: 9 descripciones a código; los valores que ya eran código
-  pasan sin cambio.
-- `lot_shape`: `Regular` → `Reg`, `Slightly irregular` → `IR1`, `Moderately Irregular` →
-  `IR2`, `Irregular` → `IR3`.
+Las reglas aplicadas fueron las siguientes:
 
-Validación: el notebook exige que cada columna sea **completamente** original o
-**completamente** codificada; las cuatro quedaron como "usa de forma consistente los
-códigos definidos".
+- **`neighborhood`:** se implementaron 21 reglas `case` para convertir las descripciones de los barrios a sus respectivos códigos. Por ejemplo, `North Ames` se convirtió en `Names` y `College Creek` en `CollgCr`. Cuatro barrios (`Edwards`, `Gilbert`, `Sawyer` y `Veenker`) ya tenían la misma descripción y código, por lo que se conservaron sin modificación. Otros tres (`Greens`, `GrnHill` y `Landmrk`) no estaban incluidos en la tabla de correspondencias del enunciado y se conservaron mediante la rama por defecto de la expresión.
+- **`condition_1` y `condition_2`:** se aplicaron nueve reglas de conversión de descripciones a códigos. Los valores que ya se encontraban expresados en código se conservaron sin cambios.
+- **`lot_shape`:** se convirtieron las descripciones `Regular`, `Slightly irregular`, `Moderately Irregular` e `Irregular` a los códigos `Reg`, `IR1`, `IR2` e `IR3`, respectivamente.
+
+Las tablas de correspondencias utilizadas se presentan en el Anexo C.
+
+**Validación:** el notebook verificó que cada una de las cuatro columnas presentara una codificación consistente, es decir, que utilizara los códigos definidos en lugar de mezclar descripciones y códigos. Las cuatro variables fueron identificadas como consistentes con los códigos establecidos.
 
 ### 5.8 Otras reglas aplicadas
 
-- `lot_frontage` vacío (490 casas) → `0`, por la regla general de numéricos ausentes.
-- `mas_vnr_type` nulo (23) → `NA`; `mas_vnr_area` nulo (23) → `0`; `electrical` nulo (1) → `NA`.
-- `central_air` booleano → `Y`/`N`.
-- `sale_type`: `trim` para eliminar el espacio final de `WD `.
-- Nombres de columna: los 81 se renombraron a snake_case en la caja `ordenar`, conservando
-  `PID`, `MS` y `QC` en mayúsculas, según el contrato del notebook del curso.
+Además de las transformaciones descritas anteriormente, se aplicaron otras reglas para completar el tratamiento de valores ausentes, estandarizar algunos campos y cumplir con la estructura requerida para el archivo final.
+
+- **`lot_frontage`:** se identificaron 490 propiedades con valores vacíos en esta columna del archivo CSV. Se asignó el valor `0` mediante una condición `isNull` en la caja `arreglar`, siguiendo la regla de representación de valores numéricos ausentes.
+
+- **`mas_vnr_type`, `mas_vnr_area` y `electrical`:** en la tabla `amesdbtemp` se encontraron 23 valores nulos en `Mas Vnr Type`, 23 en `Mas Vnr Area` y 1 en `Electrical`. Se reemplazaron por `NA` en las variables cualitativas y por `0` en la variable numérica, respectivamente.
+
+- **`central_air`:** el campo original se encontraba almacenado como valor booleano en PostgreSQL. Se convirtió a los valores `Y` y `N` mediante una expresión `CASE` en la consulta de origen, de acuerdo con el formato requerido para la salida.
+
+- **`sale_type`:** se identificaron 2.536 registros con el valor `WD` seguido de un espacio al final. Se aplicó la función `trim` en la caja `arreglar` para eliminar los espacios sobrantes y estandarizar los valores de la columna.
+
+- **Nombres de columnas:** en la caja `ordenar` se renombraron los 81 campos de salida utilizando la convención `snake_case`, sin espacios y respetando las excepciones de mayúsculas establecidas para `PID`, `MS` y `QC`. También se definió el orden de las columnas de acuerdo con el formato exigido por el notebook de validación del curso.
+
+**Validación:** estas reglas se verificaron mediante el notebook de validación. Se comprobaron los marcadores de valores ausentes, la correspondencia de `Central Air`, la ausencia de espacios sobrantes en los valores y la coincidencia de los 81 encabezados con los nombres y el orden requeridos.
 
 ### Matriz de transformaciones
 
@@ -442,8 +463,7 @@ salidas está en el repositorio.
 
 ## 9. Resultados, limitaciones y reproducibilidad
 
-- **Resultado:** `out/salida.csv`, 2.930 filas × 81 columnas, snake_case, `;`, UTF-8, sin
-  vacíos, validado el 19 de noviembre de 2026.
+- **Resultado:** `out/salida.csv`, con 2.930 filas y 81 columnas, nombres en snake_case, separador `;` y codificación UTF-8. El archivo no contiene celdas vacías y utiliza los marcadores `NA` y `0` según las reglas de tratamiento de faltantes definidas para el proyecto. Fue validado el 19 de noviembre de 2026.
 - **Fuentes:** las entregadas por el curso para 2026-2, copiadas en `sources/`.
 - **Artefactos:** `pipelines/` (JSON, `.dsl`, plantilla ARM), `notebooks/` (notebook con
   resultados), `out/` (archivo y descripción).
@@ -466,9 +486,7 @@ salidas está en el repositorio.
 3. **La vista previa engaña.** Las muestras de 1.000 filas hicieron parecer que las uniones
    fallaban cuando solo coincidían pocas casas. Aprendimos a validar con la ejecución real y
    con conteos, no con lo que se ve en pantalla.
-4. **Ausencia no es lo mismo que cero.** En Mongo una casa sin garaje no tiene documento;
-   dentro de un documento puede faltar un campo; y un `0` puede ser dato real. Tratarlos con
-   `iifNull` después de la unión resolvió los tres casos sin tocar los ceros válidos.
+4. **Ausencia no es lo mismo que cero.** En MongoDB, una propiedad puede no tener documento en una colección, un documento existente puede tener campos ausentes y algunos campos pueden contener ceros que representan valores válidos. La aplicación de `iifNull` después de las uniones permitió asignar los marcadores definidos para los valores ausentes sin reemplazar los ceros existentes. Esta decisión fue importante para conservar la información disponible y mantener la estructura esperada de la salida. 
 5. **Validar contra el ejemplo no basta.** La primera salida era idéntica al archivo de
    ejemplo y aun así falló el notebook del curso en nombres, `Lot Frontage` y `Names`. La
    validación debe hacerse contra la especificación con la que se califica, y debe repetirse
@@ -479,17 +497,11 @@ salidas está en el repositorio.
 7. **Dependencias externas.** La cuota compartida de Neon detuvo el proyecto un día. Tener
    una salida esperada calculada localmente permitió preparar un plan de contingencia y
    seguir validando sin conexión.
-   
-Aprendizajes de coordinación: trabajar sobre un único repositorio con una sola fábrica como
-fuente de verdad, acordar quién edita los archivos binarios (notebook) y publicar con
-mensajes cortos después de cada pieza terminada.
+8. **La coordinación también hace parte del proceso ETL.** Trabajar sobre un único repositorio y mantener una fábrica como fuente de verdad ayudó a evitar inconsistencias entre los archivos y las configuraciones del equipo. También fue importante acordar quién podía modificar los archivos binarios, como el notebook, y compartir avances mediante mensajes cortos después de completar cada actividad.
 
-### Sugerencias de mejora 
-  
-8. **Para una siguiente versión** usaríamos un solo conector de PostgreSQL de la misma versión
-   en todas las fábricas del equipo, guardaríamos las credenciales en Azure Key Vault para
-   poder conectar la fábrica a Git sin riesgo, y automatizaríamos la validación como un paso
-   más de la canalización.
+### Sugerencias de mejora
+
+9. **Para una siguiente versión**, utilizaríamos un solo conector de PostgreSQL de la misma versión en todas las fábricas del equipo, almacenaríamos las credenciales en Azure Key Vault para facilitar la conexión de la fábrica a Git sin exponer información sensible y automatizaríamos la validación como una actividad adicional de la canalización.
 
 ## 11. Referencias
 
