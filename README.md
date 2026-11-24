@@ -11,15 +11,15 @@ con una fila por propiedad y los 81 campos definidos en el enunciado.
 ## Información del equipo
 
 - **Nombre del equipo:** Grupo 7
-- **Estado del proyecto:** En desarrollo. Pipeline construido y ejecutado; `salida.csv`
-  validado el 19 de noviembre de 2026; reporte y presentación en elaboración.
+- **Estado del proyecto:** Finalizado. Pipeline construido y ejecutado; `salida.csv`
+  validado el 19 de noviembre de 2026 (28/28 pruebas aprobadas); reporte técnico finalizado.
 
 | Integrante | Usuario de GitHub |
 |---|---|
-| Mateo Sanchez | [@mateosanchez888](https://github.com/mateosanchez888) |
+| Mateo Sánchez | [@mateosanchez888](https://github.com/mateosanchez888) |
 | Luisa Mosquera | [@luisamosquera96](https://github.com/luisamosquera96) |
-| Dario Yepez | [@dfyepezv](https://github.com/dfyepezv) |
-| Juan Pablo Jimenez | [@iiwakashi96](https://github.com/iiwakashi96) |
+| Darío Yépez | [@dfyepezv](https://github.com/dfyepezv) |
+| Juan Pablo Jiménez | [@iiwakashi96](https://github.com/iiwakashi96) |
 | Nathalia Herrera | [@nathaherrera](https://github.com/nathaherrera) |
 
 ## Objetivo
@@ -59,13 +59,13 @@ convención de nombres sin espacios.
 | Ruta | Contenido |
 |---|---|
 | `sources/` | Fuentes originales entregadas por el curso (no se modifican) |
-| `pipelines/` | JSON exportados de Data Factory (canalizaciones, flujo de datos, conjuntos de datos y servicios vinculados sin credenciales), plantilla ARM, capturas y `pipelines.md` |
+| `pipelines/` | JSON exportados de Data Factory (canalizaciones, flujo de datos, conjuntos de datos y servicios vinculados sin credenciales), plantilla ARM y `pipelines.md` |
 | `notebooks/` | Notebook de validación `validar_salida_ames.ipynb` ejecutado sobre nuestra salida, y su guía |
 | `out/` | `salida.csv` final y `out.md` con su descripción |
+| `pics/` | Capturas de ejecución de Data Factory, resultados de validación y evidencia de exploración (`exploracion/`) |
 | `docs/` | Guías del curso para el reporte, la presentación y el uso del repositorio |
 | `report.md` | Reporte del proyecto |
 | `README.md` | Este archivo |
-
 ## Entregables
 
 - [Reporte del proyecto](report.md)
