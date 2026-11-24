@@ -7,9 +7,24 @@
 | Curso | Ingeniería de Datos I, Unidad 4 (Procesos ETL). Maestría en Ciencia de Datos, Universidad Icesi, 2026-2 |
 | Proyecto | Proceso ETL en Azure Data Factory para integrar las fuentes del conjunto de datos Ames y producir `salida.csv` |
 | Equipo | Grupo 7 |
-| Integrantes | Mateo Sanchez, Luisa Mosquera, Dario Yepez, Juan Pablo Jimenez, Nathalia Herrera |
+| Integrantes | Mateo Sánchez, Luisa Mosquera, Darío Yépez, Juan Pablo Jiménez, Nathalia Herrera |
 | Fecha de entrega | 19 de noviembre de 2026 |
 | Repositorio | https://github.com/iiwakashi96/ProyectoETL_Ing_Datos_1 |
+
+## TABLA DE CONTENIDO 
+
+- [1. Identificación del proyecto](#1-identificación-del-proyecto)
+- [2. Introducción y objetivo](#2-introducción-y-objetivo)
+- [3. Fuentes de datos y exploración](#3-fuentes-de-datos-y-exploración)
+- [4. Diseño de la integración](#4-diseño-de-la-integración)
+- [5. Transformaciones](#5-transformaciones)
+- [6. Implementación en Azure Data Factory](#6-implementación-en-azure-data-factory)
+- [7. Validación de `salida.csv`](#7-validación-de-salidacsv)
+- [8. Tecnologías utilizadas](#8-tecnologías-utilizadas)
+- [9. Resultados, limitaciones y reproducibilidad](#9-resultados-limitaciones-y-reproducibilidad)
+- [10. Conclusiones y lecciones aprendidas](#10-conclusiones-y-lecciones-aprendidas)
+- [11. Referencias](#11-referencias)
+- [Anexos](#anexos)
 
 ## 2. Introducción y objetivo
 
@@ -503,10 +518,10 @@ Disponible: https://github.com/angievig/ETLIngenieriaDatos1
 
 ## Anexos
 
-- **Anexo A.** Consulta de origen de PostgreSQL (en `pipelines/dataflow/df_ames.dsl`,
+- ### Anexo A. Consulta de origen de PostgreSQL (en `pipelines/dataflow/df_ames.dsl`,
   origen `postgres`).
   
-- **Anexo B. Equivalencia de los 81 encabezados**
+- ### Anexo B. Equivalencia de los 81 encabezados
 
 Nombres del enunciado y encabezados de `salida.csv` en snake_case, en el orden exigido.
 `PID`, `MS` y `QC` se conservan en mayúsculas.
@@ -595,7 +610,7 @@ Nombres del enunciado y encabezados de `salida.csv` en snake_case, en el orden e
 | 80 | `SaleCondition` | `sale_condition` |
 | 81 | `SalePrice` | `sale_price` |
 
-- **Anexo C. Tablas de correspondencia descripción → código**
+- ### Anexo C. Tablas de correspondencia descripción → código
   
 Tablas del enunciado aplicadas en la caja `arreglar` del flujo `df_ames`.
 
@@ -653,9 +668,9 @@ figuran en la tabla y se conservaron):
 | Moderately Irregular | IR2 |
 | Irregular | IR3 |
 
-- **Anexo D.** Resultados completos del notebook de validación (`notebooks/`).
+- ### Anexo D. Resultados completos del notebook de validación (`notebooks/`).
 
-- **Anexo E. Evidencia de la exploración de las fuentes**
+- ### Anexo E. Evidencia de la exploración de las fuentes
 
 Consultas ejecutadas en pgAdmin (PostgreSQL) y en el shell de MongoDB Compass durante la
 exploración, con su resultado. Las cifras son conteos observados en las fuentes.
